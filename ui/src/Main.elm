@@ -1,6 +1,19 @@
 module Main exposing (..)
 
-import Html exposing (p, text)
+import Element exposing (..)
 
 main =
-    p [] [ text "Hello from Elm!" ]
+    layout [] view
+
+view : Element.Element msg
+view =
+    column
+        [
+            width (px 200)
+            , height (px 200)
+            , centerX
+            , centerY
+        ]
+        [
+            el [ centerX, centerY ] (text "Hello from Elm!")
+        ]

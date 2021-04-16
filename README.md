@@ -6,6 +6,7 @@ This boilerplate is a very simple starting point for using Elm and Rust for web 
 - NodeJS setup in the UI with Webpack and HMR
 - Yarn 2 (with PnP for ultra-fast dependency management)
 - Elm integration with Webpack (including HMR)
+- Elm UI support out of the box
 - Empty Elm project for frontend use
 - Empty Rust project for backend use
 
@@ -45,7 +46,7 @@ That being said, if you loathe Bonnie for some reason, you can easily substitute
 
 This boilerplate is currently identical to [elm-rust-boilerplate-minimal](https://github.com/arctic-hen7/elm-rust-boilerplate-minimal), however the following features are on the roadmap to make this boilerplate significantly more fully-featured. If you think there's a feature that should be in here, please file an issue on this repository!
 
-- [ ] Add Elm UI
+* [x] Add Elm UI
 - [ ] Set up a GraphQL server in Rust
 
 ## License
