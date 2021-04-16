@@ -28,7 +28,7 @@ RUN chmod +x /usr/local/bin/elm
 # Rust Setup Stage - install and set up Rust for development (used for backend)
 FROM elm-setup AS rust-setup
 # Install the necessary system dependencies
-RUN apk add --no-cache clang llvm gcc
+RUN apk add --no-cache build-base clang llvm gcc
 # Download and run the Rust installer, using the default options (needs to be done as the unprivileged user)
 USER node
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -39,8 +39,6 @@ USER root
 # Base Stage - install system-level dependencies, disable telemetry, and copy files
 FROM rust-setup AS base
 WORKDIR /app
-# Install necessary system dependencies
-# RUN apk add --no-cache build-base libtool automake autoconf nasm python3
 # Disable telemetry of various tools for privacy
 RUN yarn config set --home enableTelemetry 0
 # Copy our source code into the container
