@@ -5,6 +5,10 @@
     "author": "arctic_hen7 <arctic_hen7@pm.me>",
     "license": "MIT",
     "private": true,
+    "scripts": {
+        "dev": "yarn webpack serve --mode development",
+        "build": "yarn webpack --mode production"
+    },
     "devDependencies": {
         "dotenv": "^8.2.0",
         "elm-webpack-loader": "^8.0.0",
