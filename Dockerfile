@@ -32,11 +32,31 @@ RUN apk add --no-cache build-base clang llvm gcc
 # Download and run the Rust installer, using the default options (needs to be done as the unprivileged user)
 USER node
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# Install Cargo plugins
+# We have to use the absolute path to the Cargo binary because it isn't aliased in the Docker build process
+RUN /home/node/.cargo/bin/cargo install cargo-watch
+# Switch back to root for the remaining stages
+USER root
+
+# Rust Cacher Stage - caches all dependencies in the Rust code with `cargo vendor` to speed up builds massively
+# When your dependencies change, this will be re-executed, otherwise you get super-speed caching performance!
+FROM rust-setup AS rust-cacher
+USER node
+RUN mkdir -p /app/api \
+    && chown -R node:node /app/api
+# Copy the Cargo configuration files into the correct place in the container
+WORKDIR /app/api
+COPY ./api/Cargo.lock Cargo.lock
+COPY ./api/Cargo.toml Cargo.toml
+# Vendor all dependencies (stores them all locally, meaning they can be cached)
+RUN mkdir -p /app/api/.cargo \
+    && chown -R node:node /app/api/.cargo
+RUN /home/node/.cargo/bin/cargo vendor > .cargo/config
 # Switch back to root for the remaining stages
 USER root
 
 # Base Stage - install system-level dependencies, disable telemetry, and copy files
-FROM rust-setup AS base
+FROM rust-cacher AS base
 WORKDIR /app
 # Disable telemetry of various tools for privacy
 RUN yarn config set --home enableTelemetry 0
