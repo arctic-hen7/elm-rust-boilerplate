@@ -32,7 +32,6 @@ RUN apk add --no-cache build-base clang llvm gcc
 # Download and run the Rust installer, using the default options (needs to be done as the unprivileged user)
 USER node
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-RUN source /home/node/.cargo/env
 # Switch back to root for the remaining stages
 USER root
 
