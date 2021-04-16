@@ -7,7 +7,7 @@ getcontainerid.args = [
 # Use this script to run any `docker-compose` commands, it automatically interpolates environment variables
 dc = "docker-compose --env-file .ports.env %%"
 # Rebuilds all containers, use this when you change any Docker configurations or update Rust dependencies
-rebuild-containers = "bonnie dc up --build -d"
+rebuild = "bonnie dc up --build -d"
 # Opens a shell into the Docker container (doesn't build, so should be super-fast)
 # Change `boilerplate` to whatever you name your containers in `docker-compose.yml`
 sh = "bonnie dc up -d && docker attach $(bonnie getcontainerid boilerplate.playground)"
