@@ -8,6 +8,7 @@ services:
             target: playground # We use the playground stage of the Dockerfile so we get a terminal prompt
         ports:
             - "127.0.0.1:${APP_PORT}:8000" # Anything running on 0.0.0.0:8000 in the container gets forwarded to localhost:${APP_PORT} on the host
+            - "127.0.0.1:${SERVER_PORT}:7000" # Anything running on 0.0.0.0:8000 in the container gets forwarded to localhost:${APP_PORT} on the host
         volumes:
             # Binds your app code into the container so changes you make are reflected instantly
             - type: bind
