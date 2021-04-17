@@ -14,6 +14,23 @@ services:
             - type: bind
               source: ./
               target: /app
+        depends_on:
+            - db # The DB must be started before this container can come up
         # Allows this container to be accessed with a terminal for debugging
         stdin_open: true
         tty: true
+    # Creates a DB for development, which will run entirely isolated in Docker
+    # When you switch to a production DB, this is redundant, it's only useful for development
+    # This is started by Bonnie automatically
+    db:
+        image: mongo:latest
+        container_name: boilerplate.db
+        ports:
+            - "127.0.0.1:${DB_PORT}:27017" # Anything running on 0.0.0.0:27017 in the container gets forwarded to localhost:${APP_PORT} on the host
+        env_file: ./api/.env.local # DB credentials stored in the API secrets file are used to initialise the DB with a username and password
+        # Set up an internal Docker volume for the MongoDB data so that it persists across container restarts (stored internally by Docker)
+        volumes:
+            - "db-data:/data/db"
+volumes:
+    db-data:
+        name: boilerplate-db
