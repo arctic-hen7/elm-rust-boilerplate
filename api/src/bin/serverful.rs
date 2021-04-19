@@ -1,10 +1,6 @@
-mod load_env;
-mod db;
-mod schemas;
-mod graphql;
+// This binary runs a serverful setup with Actix, as opposed to a serverless approach (TODO)
 
-use crate::graphql::get_schema;
-use crate::load_env::load_env;
+use lib::{load_env, get_schema};
 
 #[tokio::main]
 async fn main() {
