@@ -13,6 +13,7 @@ serde_derive = "1.0.103"
 mongodb = "1.2.1"
 dotenv = "0.15.0"
 tokio = { version = "0.2.25", features = ["full"] } # `mongodb` needs an 0.2.x version
+async-graphql = "2.8.2"
 
 # This annotation explicitly states the default behaviour, but it's needed for `cargo vendor` in the Docker build
 [[bin]]

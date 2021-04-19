@@ -1,20 +1,39 @@
 mod load_env;
 mod db;
-mod schema;
+mod schemas;
+mod graphql;
 
-use crate::schema::{Client, DbClient, User};
+use crate::graphql::get_schema;
 use crate::load_env::load_env;
 
 #[tokio::main]
 async fn main() {
     load_env().expect("Error getting environment variables!");
 
-    let new_user = User {
-        username: "jane".to_string(),
-        full_name: Some("Jane Doe".to_string()),
-        password: "password".to_string()
-    };
+    // let query = "
+    //     mutation {
+    //         addUser(newUser: {
+    //             username: \"john\",
+    //             fullName: \"John Doe\",
+    //             password: \"password\"
+    //         }) {
+    //             oid
+    //             username
+    //             fullName
+    //         }
+    //     }
+    // ";
+    let query = "
+        query {
+            users(username: \"jane\") {
+                oid
+                username
+                fullName
+            }
+        }
+    ";
+    let schema = get_schema();
+    let res = schema.execute(query).await;
 
-    let client = Client::new().unwrap();
-    client.add_user(new_user).await.unwrap();
+    println!("{:#?}", res)
 }

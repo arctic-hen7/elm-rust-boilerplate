@@ -1,12 +1,16 @@
 use std::env;
 use mongodb::{
-    Client,
+    Client as MongoClient,
     options::{ClientOptions, StreamAddress, Credential},
-    error::Error as MongoError,
+};
+use async_graphql::{
+    Result as GQLResult,
+    Error as GQLError
 };
 
 // A helper function for implementations of the DbClient trait that gets a handle to a DB client from environment variables
-pub fn get_client() -> Result<Client, MongoError> {
+// All errors are given in GraphQL format, seeing as this function will be called in resolver logic and conversion is annoying
+pub fn get_client() -> GQLResult<MongoClient> {
     // Get all the necessary configuration from environment variables
     let hostname = env::var("DB_HOSTNAME").expect("Environment variable 'DB_HOSTNAME' not present or invalid.");
     let port = env::var("DB_PORT")
@@ -30,11 +34,26 @@ pub fn get_client() -> Result<Client, MongoError> {
                     .build()
             )
             .build();
-    let client = Client::with_options(options)?;
-
-    Ok(client)
+    let client = MongoClient::with_options(options);
+    match client {
+        Ok(client) => Ok(client),
+        // TODO revisit this error message
+        Err(_) => Err(GQLError::new("Error connecting to database"))
+    }
 }
 
-pub trait DbClient {
-    fn new() -> Result<Self, MongoError> where Self: std::marker::Sized;
+// The MongoDB crate handles pooling internally, so we don't have to worry about it here
+// We just need a struct that exposes methods to get a client
+// If extra pooling logic ever needs to be added, it can be done from here
+pub struct DbPool {}
+impl DbPool {
+    pub fn new() -> Self {
+        Self {}
+    }
+    pub fn get_client(&self) -> GQLResult<MongoClient> {
+        // Check if we already have a client cached
+        let client = get_client()?;
+
+        Ok(client)
+    }
 }
