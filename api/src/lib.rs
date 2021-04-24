@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 // This crate has a library architecture for easier testing, with binaries that make use of the library in `src/bin`
 
 mod load_env;

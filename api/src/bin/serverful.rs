@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 // This binary runs a serverful setup with Actix, as opposed to a serverless approach (TODO)
 
 use async_graphql_actix_web::{Request, Response};
