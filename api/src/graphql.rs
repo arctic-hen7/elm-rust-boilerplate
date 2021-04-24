@@ -51,7 +51,9 @@ impl BaseQuery {
     }
 }
 
-pub fn get_schema() -> Schema<QueryRoot, MutationRoot, async_graphql::EmptySubscription> {
+pub type AppSchema = Schema<QueryRoot, MutationRoot, async_graphql::EmptySubscription>;
+
+pub fn get_schema() -> AppSchema {
     Schema::build(QueryRoot::default(), MutationRoot::default(), async_graphql::EmptySubscription)
         .data(Context {
             pool: DbPool::new()

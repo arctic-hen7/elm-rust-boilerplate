@@ -5,35 +5,24 @@ use async_graphql::{
     Object as GQLObject,
     Result as GQLResult,
     InputObject as GQLInputObject,
-    Error as GQLError
+    Error as GQLError,
 };
 use mongodb::{
-    bson::{
-        doc,
-        oid::ObjectId
-    },
+    bson::doc,
     Client as MongoClient,
     Collection
 };
 use crate::graphql::get_client_from_ctx;
+use crate::oid::ObjectId;
 
 #[derive(Serialize, Deserialize, Debug, GQLSimpleObject)]
 pub struct User {
-    // The `_id` field must be skipped entirely if you want to query with it (otherwise deserialization breaks the type acceptance)
-    #[serde(skip)]
-    pub oid: String,
+    // We need to use `id` because otherwise we can't access the field properly with Rust
+    #[serde(rename = "_id")]
+    pub id: ObjectId,
     pub username: String,
     pub full_name: Option<String>,
     pub password: String
-}
-// TODO add a macro to make all fields of a struct optional
-#[derive(Serialize, Deserialize, Debug, GQLInputObject)]
-pub struct PartialUser {
-    #[serde(skip)]
-    pub oid: Option<String>,
-    pub username: Option<String>,
-    pub full_name: Option<String>,
-    pub password: Option<String>
 }
 #[derive(Serialize, Deserialize, Debug, GQLInputObject)]
 pub struct UserInput {
@@ -74,17 +63,13 @@ impl Mutation {
         let users = get_users(get_client_from_ctx(ctx)?);
         let users_input: Collection<UserInput> = users.clone_with_type();
 
-        let inserted_id = users_input.insert_one(new_user, None).await?.inserted_id.as_object_id().unwrap().to_hex();
-        let inserted = users.find_one(doc! {
-            "_id": ObjectId::with_string(&inserted_id).unwrap() // The string came from an ObjectId, we know more than the compiler
-        }, None).await?;
+        let insertion_res = users_input.insert_one(new_user, None).await?;
+        let inserted = users.find_one(ObjectId::find_clause_from_insertion_res(insertion_res)?, None).await?;
 
-        match inserted {
-            Some(inserted) => Ok(User {
-                oid: inserted_id,
-                ..inserted
-            }),
-            None => Err(GQLError::new("Couldn't find inserted field"))
-        }
+        let insert_find_err = GQLError::new("Couldn't find inserted field");
+
+        inserted.ok_or(
+            insert_find_err
+        )
     }
 }

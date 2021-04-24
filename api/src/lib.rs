@@ -4,6 +4,7 @@ mod load_env;
 mod db;
 mod schemas;
 mod graphql;
+mod oid;
 
-pub use crate::graphql::get_schema;
+pub use crate::graphql::{get_schema, AppSchema};
 pub use crate::load_env::load_env;
