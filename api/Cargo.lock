@@ -875,6 +875,7 @@ dependencies = [
  "async-graphql",
  "async-graphql-actix-web",
  "dotenv",
+ "futures",
  "mongodb",
  "serde",
  "serde_derive",

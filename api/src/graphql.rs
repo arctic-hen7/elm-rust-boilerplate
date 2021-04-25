@@ -3,7 +3,8 @@
 use crate::schemas::{
     users::{
         Query as UsersQuery,
-        Mutation as UsersMutation
+        Mutation as UsersMutation,
+        Subscription as UsersSubscription
     }
 };
 
@@ -13,10 +14,14 @@ pub struct QueryRoot(BaseQuery, UsersQuery);
 #[derive(MergedObject, Default)]
 pub struct MutationRoot(UsersMutation);
 
+#[derive(MergedSubscription, Default)]
+pub struct SubscriptionRoot(UsersSubscription);
+
 // GRAPHQL CODE
 
 use async_graphql::{
     MergedObject,
+    MergedSubscription,
     Object as GQLObject,
     Result as GQLResult,
     Schema,
@@ -51,10 +56,10 @@ impl BaseQuery {
     }
 }
 
-pub type AppSchema = Schema<QueryRoot, MutationRoot, async_graphql::EmptySubscription>;
+pub type AppSchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 pub fn get_schema() -> AppSchema {
-    Schema::build(QueryRoot::default(), MutationRoot::default(), async_graphql::EmptySubscription)
+    Schema::build(QueryRoot::default(), MutationRoot::default(), SubscriptionRoot::default())
         .data(Context {
             pool: DbPool::new()
         })

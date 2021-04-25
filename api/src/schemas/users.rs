@@ -1,4 +1,4 @@
-use tokio::stream::StreamExt;
+use tokio::stream::{StreamExt, Stream};
 use serde::{Serialize, Deserialize};
 use async_graphql::{
     SimpleObject as GQLSimpleObject,
@@ -6,6 +6,7 @@ use async_graphql::{
     Result as GQLResult,
     InputObject as GQLInputObject,
     Error as GQLError,
+    Subscription as GQLSubscription
 };
 use mongodb::{
     bson::doc,
@@ -71,5 +72,15 @@ impl Mutation {
         inserted.ok_or(
             insert_find_err
         )
+    }
+}
+
+// Register Subscription methods
+#[derive(Default)]
+pub struct Subscription;
+#[GQLSubscription]
+impl Subscription {
+    async fn numbers(&self) -> impl Stream<Item = i32> {
+        futures::stream::iter(0..10)
     }
 }
