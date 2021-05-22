@@ -1,10 +1,22 @@
 #![forbid(unsafe_code)]
-// This binary runs a serverful setup with Actix Web, as opposed to a serverless approach (TODO)
+// This binary runs a serverful system with Actix Web for serving subscriptions, designed for production usage
+// If your system doesn't use subscriptions, this binary is irrelevant for you
+// Serverless functions cannot handle subscriptions because they would need to hold WebSocket connections, which are stateful,
+// so we need to use a server. We could use an intermediary, but that's generally more complex and expensive.
+// AWS AppSync is a popular solution, though this system deploys on Netlify, and so that's useless here (though it could be modified for AWS)
 
+use std::sync::Mutex;
 use async_graphql_actix_web::{Request, Response, WSSubscription};
 use async_graphql::{Schema, http::{playground_source, GraphQLPlaygroundConfig}};
-use actix_web::{guard, web, App, HttpServer, HttpRequest, HttpResponse, Result as ActixResult};
-use lib::{load_env, get_schema, AppSchema};
+use actix_web::{
+    guard, web, App, HttpServer, HttpRequest, HttpResponse, Result as ActixResult,
+};
+use lib::{
+    load_env,
+    AppSchemaForSubscriptions as AppSchema,
+    get_schema_for_subscriptions as get_schema,
+    PubSub
+};
 
 const GRAPHIQL_ENDPOINT: &str = "/graphiql"; // For the graphical development playground
 const GRAPHQL_ENDPOINT: &str = "/graphql";
@@ -15,11 +27,12 @@ const GRAPHQL_ENDPOINT: &str = "/graphql";
 async fn main() -> std::io::Result<()> {
     load_env().expect("Error getting environment variables!");
     // We get the schema once and then use it for all queries
-     let schema = get_schema();
+    let schema = get_schema();
 
     HttpServer::new(move || {
         App::new()
             .data(schema.clone())
+            .data(Mutex::new(PubSub::new()))
             .service(web::resource(GRAPHQL_ENDPOINT).guard(guard::Post()).to(graphql)) // POST endpoint for queries/mutations
             .service(web::resource(GRAPHQL_ENDPOINT)
                 .guard(guard::Get())
@@ -28,7 +41,7 @@ async fn main() -> std::io::Result<()> {
             ) // WebSocket endpoint for subscriptions
             .service(web::resource(GRAPHIQL_ENDPOINT).guard(guard::Get()).to(graphiql)) // GET endpoint for GraphiQL playground
     })
-    .bind("0.0.0.0:7000")? // This stays the same, that port in the container will get forwarded to whatever's configured in `.ports.env`
+    .bind("0.0.0.0:6000")? // This stays the same, that port in the container will get forwarded to whatever's configured in `.ports.env`
     .run()
     .await
 }

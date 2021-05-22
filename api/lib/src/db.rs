@@ -8,9 +8,12 @@ use async_graphql::{
     Error as GQLError
 };
 
+use crate::load_env;
+
 // A helper function for implementations of the DbClient trait that gets a handle to a DB client from environment variables
 // All errors are given in GraphQL format, seeing as this function will be called in resolver logic and conversion is annoying
 pub fn get_client() -> GQLResult<MongoClient> {
+    load_env().expect("Error getting environment variables!");
     // Get all the necessary configuration from environment variables
     let hostname = env::var("DB_HOSTNAME").expect("Environment variable 'DB_HOSTNAME' not present or invalid.");
     let port = env::var("DB_PORT")

@@ -4,15 +4,15 @@ use std::fs;
 pub fn load_env() -> Result<(), String> {
     // Load the environment-specific environment variable files (checking whether we're in development/debug or production/release)
     if cfg!(debug_assertions) {
-        load_env_file_if_present(".env.development")?; // Non-secret
-        load_env_file_if_present(".env.development.local")?; // Secret
+        load_env_file_if_present("../.env.development")?; // Non-secret
+        load_env_file_if_present("../.env.development.local")?; // Secret
     } else {
-        load_env_file_if_present(".env.production")?; // Non-secret
-        load_env_file_if_present(".env.production.local")?; // Secret
+        load_env_file_if_present("../.env.production")?; // Non-secret
+        load_env_file_if_present("../.env.production.local")?; // Secret
     }
     // Load the files for all environments
-    load_env_file_if_present(".env")?; // Non-secret
-    load_env_file_if_present(".env.local")?; // Secret
+    load_env_file_if_present("../.env")?; // Non-secret
+    load_env_file_if_present("../.env.local")?; // Secret
 
     Ok(())
 }

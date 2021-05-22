@@ -13,8 +13,10 @@ use mongodb::{
     Client as MongoClient,
     Collection
 };
-use crate::graphql::get_client_from_ctx;
+use async_stream::stream;
+use crate::graphql::{get_client_from_ctx, get_stream_for_channel_from_ctx};
 use crate::oid::ObjectId;
+use crate::pubsub::Publisher;
 
 #[derive(Serialize, Deserialize, Debug, GQLSimpleObject)]
 pub struct User {
@@ -69,6 +71,13 @@ impl Mutation {
 
         let insert_find_err = GQLError::new("Couldn't find inserted field");
 
+        if inserted.is_some() {
+            // Notify the subscriptions server that a new user has been added
+            let publisher = ctx.data::<Publisher>()?;
+            let user_json = serde_json::to_string(&inserted).unwrap(); // We just created it, it should certainly serialise
+            publisher.publish("new_user", "user_json".to_string()).await?;
+        }
+
         inserted.ok_or(
             insert_find_err
         )
@@ -82,5 +91,19 @@ pub struct Subscription;
 impl Subscription {
     async fn numbers(&self) -> impl Stream<Item = i32> {
         futures::stream::iter(0..10)
+    }
+    // Returns each new user that is added
+    async fn new_users(&self, raw_ctx: &async_graphql::Context<'_>) -> impl Stream<Item = Result<User, String>> {
+        // Get a direct stream from the context on a certain channel
+        let stream = get_stream_for_channel_from_ctx("new_user", raw_ctx);
+
+        // We can manipulate the stream using the stream macro from async-stream
+        stream! {
+            for await message in stream {
+                // Serialise the data as a user
+                let new_user: User = serde_json::from_str(&message).map_err(|_err| "couldn't serialize given data correctly".to_string())?;
+                yield Ok(new_user);
+            }
+        }
     }
 }

@@ -38,16 +38,26 @@ RUN /home/node/.cargo/bin/cargo install cargo-watch
 # Switch back to root for the remaining stages
 USER root
 
+# Dependencies Stage - install all system-level dependencies that won't change (before Rust caching because that gets constantly re-executed)
+FROM rust-setup AS dependencies
+# Install system dependencies
+USER root
+RUN apk add --no-cache openssl-dev
+
 # Rust Cacher Stage - caches all dependencies in the Rust code with `cargo vendor` to speed up builds massively
 # When your dependencies change, this will be re-executed, otherwise you get super-speed caching performance!
-FROM rust-setup AS rust-cacher
+FROM dependencies AS rust-cacher
 USER node
 RUN mkdir -p /app/api \
     && chown -R node:node /app/api
-# Copy the Cargo configuration files into the correct place in the container
+# Copy the Cargo configuration files into the correct place in the container (for each workspace)
+# Note that we need to be able to write to Cargo.lock
 WORKDIR /app/api
-COPY ./api/Cargo.lock Cargo.lock
+COPY --chown=node:node ./api/Cargo.lock Cargo.lock
 COPY ./api/Cargo.toml Cargo.toml
+COPY ./api/lib/Cargo.toml lib/Cargo.toml
+COPY ./api/graphql_server/Cargo.toml graphql_server/Cargo.toml
+COPY ./api/subscriptions_server/Cargo.toml subscriptions_server/Cargo.toml
 # Vendor all dependencies (stores them all locally, meaning they can be cached)
 RUN mkdir -p /app/api/.cargo \
     && chown -R node:node /app/api/.cargo
@@ -67,3 +77,15 @@ COPY . .
 FROM base AS playground
 USER node
 ENTRYPOINT [ "/bin/zsh" ]
+
+# Server stage - runs the GraphQL server
+FROM base AS server
+USER node
+WORKDIR /app/api/graphql_server
+ENTRYPOINT [ "/bin/zsh", "-c", "cargo watch -x \"run --bin serverful\"" ]
+
+# Subscriptions server stage - runs the GraphQL subscriptions server
+FROM base AS subscriptions_server
+USER node
+WORKDIR /app/api/subscriptions_server
+ENTRYPOINT [ "/bin/zsh", "-c", "cargo watch -x \"run\"" ]

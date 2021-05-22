@@ -8,8 +8,20 @@ getcontainerid.args = [
 dc = "docker-compose --env-file .ports.env %%"
 # Rebuilds all containers, use this when you change any Docker configurations or update Rust dependencies
 rebuild = "bonnie dc up --build -d"
+# Starts all containers without creating a shell
+up = "bonnie dc up -d"
 # Opens a shell into the Docker container (doesn't build, so should be super-fast)
 # Change `boilerplate` to whatever you name your containers in `docker-compose.yml`
-sh = "bonnie dc up -d && docker attach $(bonnie getcontainerid boilerplate.playground)"
+sh = "bonnie up && docker attach $(bonnie getcontainerid boilerplate.playground)"
 # Brings down all Docker containers
 end = "bonnie dc down"
+
+# Scripts for individual containers
+up-server = "bonnie dc up -d server"
+down-server = "bonnie dc stop server"
+attach-server = "bonnie up-server && docker attach $(bonnie getcontainerid boilerplate.server)"
+sh-server = "bonnie dc run --entrypoint \"/bin/zsh\" -p 9001:7000 --use-aliases --rm server"
+up-subscriptions-server = "bonnie dc up -d subscriptions-server"
+down-subscriptions-server = "bonnie dc stop subscriptions-server"
+attach-subscriptions-server = "bonnie up-subscriptions-server && docker attach $(bonnie getcontainerid boilerplate.subscriptions-server)"
+sh-subscriptions-server = "bonnie dc run --entrypoint \"/bin/zsh\" -p 9002:6000 --use-aliases --rm subscriptions-server"
