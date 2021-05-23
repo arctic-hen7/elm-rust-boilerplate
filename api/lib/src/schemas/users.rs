@@ -3,9 +3,7 @@ use serde::{Serialize, Deserialize};
 use async_graphql::{
     SimpleObject as GQLSimpleObject,
     Object as GQLObject,
-    Result as GQLResult,
     InputObject as GQLInputObject,
-    Error as GQLError,
     Subscription as GQLSubscription
 };
 use mongodb::{
@@ -14,6 +12,9 @@ use mongodb::{
     Collection
 };
 use async_stream::stream;
+
+// Note that we don't use `error_chain` here, just the GraphQL errors system
+use crate::errors::{GQLResult, GQLError};
 use crate::graphql::{get_client_from_ctx, get_stream_for_channel_from_ctx};
 use crate::oid::ObjectId;
 use crate::pubsub::Publisher;
@@ -75,7 +76,7 @@ impl Mutation {
             // Notify the subscriptions server that a new user has been added
             let publisher = ctx.data::<Publisher>()?;
             let user_json = serde_json::to_string(&inserted).unwrap(); // We just created it, it should certainly serialise
-            publisher.publish("new_user", "user_json".to_string()).await?;
+            publisher.publish("new_user", user_json.to_string()).await?;
         }
 
         inserted.ok_or(

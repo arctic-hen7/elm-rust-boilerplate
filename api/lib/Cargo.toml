@@ -19,6 +19,7 @@ reqwest = { version = "0.10.10", default-features = false, features = ["rustls-t
 async-stream = "0.3.1"
 tokio-stream = "0.1.5"
 bus = "2.2.3"
+error-chain = "0.12.4"
 
 [lib]
 name = "lib"

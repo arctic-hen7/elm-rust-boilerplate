@@ -5,10 +5,11 @@ use std::env;
 use std::collections::HashMap;
 use tokio_stream::Stream;
 use async_stream::stream;
-use tokio::sync::broadcast::{channel as create_channel, Sender, Receiver};
-use reqwest::{Client, Error as ReqwestError};
+use tokio::sync::broadcast::{channel as create_channel, Sender};
+use reqwest::Client;
 use serde::{Serialize, Deserialize};
 
+use crate::errors::*;
 use crate::load_env;
 
 const MESSAGES_TO_BE_RETAINED: usize = 5;
@@ -33,15 +34,15 @@ pub struct Publisher {
     address: String
 }
 impl Publisher {
-    pub fn new(port: Option<String>, hostname: Option<String>, endpoint: Option<String>) -> Result<Self, String> {
-        load_env().expect("Error getting environment variables!");
+    pub fn new(port: Option<String>, hostname: Option<String>, endpoint: Option<String>) -> Result<Self> {
+        load_env()?;
         let hostname = match hostname {
             Some(hostname) => hostname,
-            None => env::var("SUBSCRIPTIONS_SERVER_HOSTNAME").expect("Environment variable 'SUBSCRIPTIONS_SERVER_HOSTNAME' not present or invalid.")
+            None => env::var("SUBSCRIPTIONS_SERVER_HOSTNAME")?
         };
         let port = match port {
             Some(port) => port,
-            None => env::var("SUBSCRIPTIONS_SERVER_PORT").expect("Environment variable 'SUBSCRIPTIONS_SERVER_PORT' not present or invalid.")
+            None => env::var("SUBSCRIPTIONS_SERVER_PORT")?
         };
         let endpoint = match endpoint {
             Some(endpoint) => endpoint,
@@ -65,7 +66,7 @@ impl Publisher {
 
     // Sends the publish mutation to the subscriptions server
     // This is just done with Reqwest because we need no complex logic here
-    pub async fn publish(&self, channel: &str, data: String) -> Result<(), String> {
+    pub async fn publish(&self, channel: &str, data: String) -> Result<()> {
         let client = &self.client;
 
         // Create the query body with a HashMap of variables
@@ -89,19 +90,16 @@ impl Publisher {
             .post(&self.address)
             .json(&body)
             .send()
-            .await
-            .map_err(|err| err.to_string())?;
+            .await?;
         println!("Status: {}", res.status());
 
         let body: GQLPublishResponse = serde_json::from_str(
-            &res.text()
-                .await
-                .map_err(|err| err.to_string())?
-        ).map_err(|err| err.to_string())?;
+            &res.text().await?
+        )?;
 
         match body.data.publish {
             true => Ok(()),
-            _ => Err(String::from("subscriptions server failed to parse data"))
+            _ => bail!(ErrorKind::SubscriptionDataPublishFailed)
         }
     }
 }

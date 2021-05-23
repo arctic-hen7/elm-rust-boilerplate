@@ -14,14 +14,12 @@ use lib::{
 const GRAPHIQL_ENDPOINT: &str = "/graphiql"; // For the graphical development playground
 const GRAPHQL_ENDPOINT: &str = "/graphql";
 
-// TODO formed schema caching logic
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     load_env().expect("Error getting environment variables!");
     // We get the schema once and then use it for all queries
-    // TODO convert string errors into IO errors
-    let schema = get_schema().map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
+    // If this fails, we can't do anything at all
+    let schema = get_schema().expect("Failed to fetch schema.");
 
     HttpServer::new(move || {
         App::new()

@@ -24,13 +24,13 @@ use async_graphql::{
     MergedObject,
     MergedSubscription,
     Object as GQLObject,
-    Result as GQLResult,
     Schema,
     EmptySubscription
 };
 use mongodb::Client as MongoClient;
 use tokio::stream::Stream;
 
+use crate::errors::*;
 use crate::db::DbPool;
 use crate::pubsub::{PubSub, Publisher};
 
@@ -40,9 +40,10 @@ pub struct Context {
 }
 
 // A helper function to get a client from the given context object
-pub fn get_client_from_ctx(raw_ctx: &async_graphql::Context<'_>) -> GQLResult<MongoClient> {
+pub fn get_client_from_ctx(raw_ctx: &async_graphql::Context<'_>) -> Result<MongoClient> {
     // Extract our context from the broader `async_graphql` context
-    let ctx = raw_ctx.data::<Context>()?;
+    let ctx = raw_ctx.data::<Context>()
+        .map_err(|err| ErrorKind::GraphQLContextNotFound("main context".to_string()))?;
     let client = ctx.pool.get_client()?;
 
     Ok(client)
@@ -51,6 +52,7 @@ pub fn get_client_from_ctx(raw_ctx: &async_graphql::Context<'_>) -> GQLResult<Mo
 // A helper function to subscribe to events sent to the subscriptions server on a particular channel
 // This returns a pre-created stream which you should manipulate if necessary (e.g. to serialise data)
 // ONLY USE THIS IN SUBSCRIPTIONS! It will only run on the serverful system (stateful)
+// TODO handle errors in this function
 pub fn get_stream_for_channel_from_ctx(channel: &str, raw_ctx: &async_graphql::Context<'_>) -> impl Stream<Item = String> {
     // Extract our context from the broader `async_graphql` context
     let pubsub_mutex = raw_ctx.data::<Mutex<PubSub>>().unwrap(); // If we can't find data that should very clearly be in context, this should panic!
@@ -83,10 +85,12 @@ impl PublishMutation {
     // That provides a system-level data integrity guarantee, as only full mutations will call this, and through a PubSub abstraction
     // There should be very little reason for users to implement it themselves, but this type could easily be extended with custom logic
     // TODO authenticate that messages here have actually come from the rest of the system
-    async fn publish(&self, raw_ctx: &async_graphql::Context<'_>, channel: String, data: String) -> GQLResult<bool> {
+    async fn publish(&self, raw_ctx: &async_graphql::Context<'_>, channel: String, data: String) -> Result<bool> {
         // We store the PubSub instance as a Mutex because we need it sent/synced between threads as a mutable
-        let pubsub_mutex = raw_ctx.data::<Mutex<PubSub>>()?;
-        let mut pubsub = pubsub_mutex.lock()?;
+        let pubsub_mutex = raw_ctx.data::<Mutex<PubSub>>()
+            .map_err(|_err| ErrorKind::GraphQLContextNotFound("pubsub".to_string()))?;
+        let mut pubsub = pubsub_mutex.lock()
+            .map_err(|_err| ErrorKind::MutexPoisoned("pubsub".to_string()))?;
 
         pubsub.publish(&channel, data);
         Ok(true)
@@ -98,7 +102,7 @@ pub type AppSchemaWithoutSubscriptions = Schema<QueryRoot, MutationRoot, EmptySu
 // We need to be able to work out the API version on the subscriptions server, so we still provide the basic queries
 pub type AppSchemaForSubscriptions = Schema<BaseQuery, PublishMutation, SubscriptionRoot>;
 
-pub fn get_schema_without_subscriptions() -> Result<AppSchemaWithoutSubscriptions, String> {
+pub fn get_schema_without_subscriptions() -> Result<AppSchemaWithoutSubscriptions> {
     let schema = Schema::build(QueryRoot::default(), MutationRoot::default(), EmptySubscription)
         .data(Context {
             pool: DbPool::new()

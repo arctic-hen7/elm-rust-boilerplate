@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
-// This crate has a library architecture for easier testing, with binaries that make use of the library in `src/bin`
+// This crate has a library architecture for easier testing and code reuse, with binaries that make use of the library in the server crates
 
+pub mod errors;
 mod load_env;
 mod db;
 mod schemas;

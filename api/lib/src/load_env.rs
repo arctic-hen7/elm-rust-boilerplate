@@ -1,7 +1,9 @@
 use std::fs;
 
+use crate::errors::*;
+
 // Loads all necessary environment files with `dotenv`
-pub fn load_env() -> Result<(), String> {
+pub fn load_env() -> Result<()> {
     // Load the environment-specific environment variable files (checking whether we're in development/debug or production/release)
     if cfg!(debug_assertions) {
         load_env_file_if_present("../.env.development")?; // Non-secret
@@ -18,18 +20,10 @@ pub fn load_env() -> Result<(), String> {
 }
 
 // Loads the given environment file if it's present, otherwise does nothing (side-effect based function)
-fn load_env_file_if_present(filename: &str) -> Result<(), String> {
-    // Check if the file exists
+fn load_env_file_if_present(filename: &str) -> Result<()> {
+    // If the file exists, load its variables
     if fs::metadata(filename).is_ok() {
-        let res = dotenv::from_filename(filename);
-        match res {
-            Ok(_) => return Ok(()),
-            Err(err) => return Err(format!(
-                "Error fetching environment file '{filename}', {:?}",
-                err,
-                filename=filename
-            ))
-        };
+        dotenv::from_filename(filename)?;
     }
     // If it doesn't exist, we don't worry about it, that's the point of this function
     Ok(())
