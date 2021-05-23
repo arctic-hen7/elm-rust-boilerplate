@@ -3,12 +3,15 @@
 // Even so, this system does NOT support subscriptions so we maintain the separity in development that will be present in production
 
 use async_graphql_actix_web::{Request, Response, WSSubscription};
-use async_graphql::{Schema, http::{playground_source, GraphQLPlaygroundConfig}};
+use async_graphql::Schema;
 use actix_web::{guard, web, App, HttpServer, HttpRequest, HttpResponse, Result as ActixResult};
 use lib::{
     load_env,
     AppSchemaWithoutSubscriptions as AppSchema,
-    get_schema_without_subscriptions as get_schema
+    get_schema_without_subscriptions as get_schema,
+    routes::{
+        graphiql
+    }
 };
 
 const GRAPHIQL_ENDPOINT: &str = "/graphiql"; // For the graphical development playground
@@ -50,14 +53,4 @@ async fn graphql_ws(
     payload: web::Payload,
 ) -> ActixResult<HttpResponse> {
     WSSubscription::start(Schema::clone(&schema), &req, payload)
-}
-
-// TODO only compile this in development
-// The endpoint for the development graphical playground
-async fn graphiql() -> ActixResult<HttpResponse> {
-    Ok(HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(playground_source(
-            GraphQLPlaygroundConfig::new(GRAPHQL_ENDPOINT).subscription_endpoint(GRAPHQL_ENDPOINT),
-        )))
 }

@@ -43,7 +43,7 @@ pub struct Context {
 pub fn get_client_from_ctx(raw_ctx: &async_graphql::Context<'_>) -> Result<MongoClient> {
     // Extract our context from the broader `async_graphql` context
     let ctx = raw_ctx.data::<Context>()
-        .map_err(|err| ErrorKind::GraphQLContextNotFound("main context".to_string()))?;
+        .map_err(|_err| ErrorKind::GraphQLContextNotFound("main context".to_string()))?;
     let client = ctx.pool.get_client()?;
 
     Ok(client)

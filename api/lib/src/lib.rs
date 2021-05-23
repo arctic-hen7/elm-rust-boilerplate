@@ -8,12 +8,13 @@ mod schemas;
 mod graphql;
 mod oid;
 mod pubsub;
+pub mod routes;
 
 pub use crate::graphql::{
     AppSchemaWithoutSubscriptions,
     AppSchemaForSubscriptions,
     get_schema_without_subscriptions,
-    get_schema_for_subscriptions
+    get_schema_for_subscriptions,
 };
 pub use crate::load_env::load_env;
 pub use crate::pubsub::PubSub;

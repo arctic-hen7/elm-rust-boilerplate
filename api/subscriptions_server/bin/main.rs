@@ -7,7 +7,7 @@
 
 use std::sync::Mutex;
 use async_graphql_actix_web::{Request, Response, WSSubscription};
-use async_graphql::{Schema, http::{playground_source, GraphQLPlaygroundConfig}};
+use async_graphql::Schema;
 use actix_web::{
     guard, web, App, HttpServer, HttpRequest, HttpResponse, Result as ActixResult,
 };
@@ -15,18 +15,20 @@ use lib::{
     load_env,
     AppSchemaForSubscriptions as AppSchema,
     get_schema_for_subscriptions as get_schema,
-    PubSub
+    PubSub,
+    routes::{
+        graphiql
+    }
 };
 
 const GRAPHIQL_ENDPOINT: &str = "/graphiql"; // For the graphical development playground
 const GRAPHQL_ENDPOINT: &str = "/graphql";
 
-// TODO formed schema caching logic
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     load_env().expect("Error getting environment variables!");
     // We get the schema once and then use it for all queries
+    // The subscriptions schema can't fail (it doesn't need a potentially problematic Publisher instance)
     let schema = get_schema();
 
     HttpServer::new(move || {
@@ -59,14 +61,4 @@ async fn graphql_ws(
     payload: web::Payload,
 ) -> ActixResult<HttpResponse> {
     WSSubscription::start(Schema::clone(&schema), &req, payload)
-}
-
-// TODO only compile this in development
-// The endpoint for the development graphical playground
-async fn graphiql() -> ActixResult<HttpResponse> {
-    Ok(HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(playground_source(
-            GraphQLPlaygroundConfig::new(GRAPHQL_ENDPOINT).subscription_endpoint(GRAPHQL_ENDPOINT),
-        )))
 }
